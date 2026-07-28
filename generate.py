@@ -1,17 +1,20 @@
 from lxml import etree
 import requests
-from datetime import datetime, timedelta, time, timezone
+from datetime import datetime, timedelta, time as dt_time, timezone
 import pytz
 import unicodedata
+import time
 
 tz = pytz.timezone('Europe/Madrid')
 
 
-# From https://stackoverflow.com/questions/4324790/removing-control-characters-from-a-string-in-python
 def remove_control_characters(s):
     if s is None:
         return None
-    return "".join(ch for ch in s if unicodedata.category(ch)[0] != "C")
+    return "".join(
+        ch for ch in s
+        if unicodedata.category(ch)[0] != "C"
+    )
 
 
 def get_days() -> list:
@@ -22,89 +25,178 @@ def get_days() -> list:
         microsecond=0
     )
 
-    day_1 = datetime.combine(datetime.now(), time(0, 0)) + timedelta(1)
-    day_2 = datetime.combine(datetime.now(), time(0, 0)) + timedelta(2)
-    day_3 = datetime.combine(datetime.now(), time(0, 0)) + timedelta(3)
+    day_1 = (
+        datetime.combine(datetime.now(), dt_time(0, 0))
+        + timedelta(days=1)
+    )
+
+    day_2 = (
+        datetime.combine(datetime.now(), dt_time(0, 0))
+        + timedelta(days=2)
+    )
+
+    day_3 = (
+        datetime.combine(datetime.now(), dt_time(0, 0))
+        + timedelta(days=3)
+    )
 
     return [now, day_1, day_2, day_3]
 
 
 def build_xmltv(channels: list, programmes: list) -> bytes:
-    dt_format = '%Y%m%d%H%M%S %z'
+
+    dt_format = "%Y%m%d%H%M%S %z"
 
     def _to_tz_str(val):
+
         if isinstance(val, datetime):
+
             v = val
+
             if v.tzinfo is None:
                 v = v.replace(tzinfo=timezone.utc)
+
             return v.astimezone(tz).strftime(dt_format)
-        else:
-            return datetime.fromtimestamp(
-                val,
-                timezone.utc
-            ).astimezone(tz).strftime(dt_format)
+
+        return datetime.fromtimestamp(
+            val,
+            timezone.utc
+        ).astimezone(tz).strftime(dt_format)
 
     data = etree.Element("tv")
-    data.set("generator-info-name", "rakuten-es-epg")
-    data.set("generator-info-url", "https://github.com/bitos2002")
+
+    data.set(
+        "generator-info-name",
+        "rakuten-es-epg"
+    )
+
+    data.set(
+        "generator-info-url",
+        "https://github.com/bitos2002/rakuten-es-epg"
+    )
 
     for ch in channels:
-        channel = etree.SubElement(data, "channel")
-        channel.set("id", str(ch.get("id")))
 
-        name = etree.SubElement(channel, "display-name")
+        channel = etree.SubElement(
+            data,
+            "channel"
+        )
 
-        if ch.get("language") is not None:
-            name.set("lang", ch.get("language")[:2].lower())
-        else:
-            name.set("lang", "es")
+        channel.set(
+            "id",
+            str(ch.get("id"))
+        )
+
+        name = etree.SubElement(
+            channel,
+            "display-name"
+        )
+
+        name.set(
+            "lang",
+            "es"
+        )
 
         name.text = ch.get("name")
 
-        if ch.get("icon") is not None:
-            icon_src = etree.SubElement(channel, "icon")
-            icon_src.set("src", ch.get("icon"))
-            icon_src.text = ''
+        if ch.get("icon"):
+
+            icon_src = etree.SubElement(
+                channel,
+                "icon"
+            )
+
+            icon_src.set(
+                "src",
+                ch.get("icon")
+            )
 
     for pr in programmes:
-        programme = etree.SubElement(data, 'programme')
 
-        start_time = _to_tz_str(pr.get('starts_at'))
-        end_time = _to_tz_str(pr.get('ends_at'))
+        programme = etree.SubElement(
+            data,
+            "programme"
+        )
 
-        programme.set("channel", str(pr.get('channel_id')))
-        programme.set("start", start_time)
-        programme.set("stop", end_time)
+        programme.set(
+            "channel",
+            str(pr.get("channel_id"))
+        )
 
-        title = etree.SubElement(programme, "title")
-        title.set('lang', 'es')
+        programme.set(
+            "start",
+            _to_tz_str(pr.get("starts_at"))
+        )
+
+        programme.set(
+            "stop",
+            _to_tz_str(pr.get("ends_at"))
+        )
+
+        title = etree.SubElement(
+            programme,
+            "title"
+        )
+
+        title.set(
+            "lang",
+            "es"
+        )
+
         title.text = pr.get("title")
 
         if pr.get("subtitle"):
-            subtitle = etree.SubElement(programme, "sub-title")
-            subtitle.set('lang', 'es')
+
+            subtitle = etree.SubElement(
+                programme,
+                "sub-title"
+            )
+
+            subtitle.set(
+                "lang",
+                "es"
+            )
+
             subtitle.text = remove_control_characters(
                 pr.get("subtitle")
             )
 
         if pr.get("description"):
-            description = etree.SubElement(programme, "desc")
-            description.set('lang', 'es')
+
+            description = etree.SubElement(
+                programme,
+                "desc"
+            )
+
+            description.set(
+                "lang",
+                "es"
+            )
+
             description.text = remove_control_characters(
                 pr.get("description")
             )
 
         if pr.get("tags"):
-            if len(pr.get("tags")) > 0:
-                for tag in pr.get("tags"):
-                    category = etree.SubElement(programme, "category")
-                    category.set('lang', 'es')
-                    category.text = tag.get("name")
+
+            for tag in pr.get("tags"):
+
+                category = etree.SubElement(
+                    programme,
+                    "category"
+                )
+
+                category.set(
+                    "lang",
+                    "es"
+                )
+
+                category.text = tag.get("name")
 
     return etree.tostring(
         data,
         pretty_print=True,
-        encoding='utf-8'
+        encoding="utf-8"
     )
 
 
@@ -133,97 +225,120 @@ url = (
 
 print("Grabbing data")
 
-res = requests.get(url)
+headers = {
+    "User-Agent": (
+        "Mozilla/5.0 (X11; Linux x86_64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/138.0 Safari/537.36"
+    ),
+    "Accept": "application/json",
+    "Accept-Language": "es-ES,es;q=0.9,en;q=0.8",
+    "Referer": "https://www.rakuten.tv/",
+}
 
-if res.status_code != 200:
+res = None
+
+for attempt in range(5):
+
+    print(f"Attempt {attempt + 1}/5")
+
+    try:
+
+        res = requests.get(
+            url,
+            headers=headers,
+            timeout=60
+        )
+
+        print(f"HTTP Status: {res.status_code}")
+
+        if res.status_code == 200:
+            break
+
+    except Exception as e:
+
+        print(f"Request error: {e}")
+
+    if attempt < 4:
+        print("Waiting 30 seconds before retry...")
+        time.sleep(30)
+
+if res is None or res.status_code != 200:
+
     raise ConnectionError(
-        f"HTTP{res.status_code}: could not get info from server!"
+        f"HTTP{res.status_code if res else 'NO_RESPONSE'}: could not get info from server!"
     )
 
-print("Loading JSON")
+json = res.json()["data"]
 
-json = res.json()['data']
-
-print(f"\nRetrieved {len(json)} channels:")
+print(f"Retrieved {len(json)} channels")
 
 channels_data = []
 programme_data = []
 
 for channel in json:
 
-    ch_name = channel['title']
-    print(ch_name)
-
-    ch_number = channel['channel_number']
-    ch_id = channel['id']
+    ch_id = channel["id"]
 
     ch_icon = None
-    ch_language = "es"
+
+    if channel.get("images"):
+
+        images = channel["images"]
+
+        if images.get("artwork_negative"):
+            ch_icon = images["artwork_negative"]
+
+        elif images.get("artwork"):
+            ch_icon = images["artwork"]
+
     ch_tags = None
 
-    if channel.get('images'):
-        images = channel['images']
+    if channel.get("labels"):
 
-        if images.get('artwork_negative'):
-            ch_icon = images.get('artwork_negative')
-        elif images.get('artwork'):
-            ch_icon = images.get('artwork')
+        labels = channel["labels"]
 
-    if channel.get('labels'):
-        labels = channel['labels']
-
-        if labels.get('languages'):
-            try:
-                ch_language = labels.get(
-                    'languages'
-                )[0].get('id')
-            except Exception:
-                ch_language = "es"
-
-        if labels.get('tags'):
-            ch_tags = labels.get('tags')
+        if labels.get("tags"):
+            ch_tags = labels["tags"]
 
     channels_data.append({
-        "name": ch_name,
-        "epg_number": ch_number,
+        "name": channel["title"],
+        "epg_number": channel.get("channel_number"),
         "id": ch_id,
         "icon": ch_icon,
-        "language": ch_language,
+        "language": "es",
         "tags": ch_tags
     })
 
-    programmes_list = channel['live_programs']
-
-    for item in programmes_list:
+    for item in channel["live_programs"]:
 
         start = datetime.strptime(
-            item['starts_at'],
-            '%Y-%m-%dT%H:%M:%S.000%z'
+            item["starts_at"],
+            "%Y-%m-%dT%H:%M:%S.000%z"
         )
 
         end = datetime.strptime(
-            item['ends_at'],
-            '%Y-%m-%dT%H:%M:%S.000%z'
+            item["ends_at"],
+            "%Y-%m-%dT%H:%M:%S.000%z"
         )
 
         programme_data.append({
-            "title": item['title'],
-            "subtitle": item['subtitle'],
-            "description": item['description'],
+            "title": item["title"],
+            "subtitle": item["subtitle"],
+            "description": item["description"],
             "starts_at": start,
             "ends_at": end,
             "channel_id": ch_id,
-            "language": ch_language,
+            "language": "es",
             "tags": ch_tags,
         })
-
 
 gap_threshold = 60
 
 programme_data.sort(
     key=lambda p: (
-        p['channel_id'],
-        p['starts_at']
+        p["channel_id"],
+        p["starts_at"]
     )
 )
 
@@ -231,7 +346,7 @@ by_channel = {}
 
 for p in programme_data:
     by_channel.setdefault(
-        p['channel_id'],
+        p["channel_id"],
         []
     ).append(p)
 
@@ -242,22 +357,27 @@ for ch_id, plist in by_channel.items():
         cur = plist[i]
         nxt = plist[i + 1]
 
-        if nxt['starts_at'] <= cur['ends_at']:
-            cur['ends_at'] = nxt['starts_at']
+        if nxt["starts_at"] <= cur["ends_at"]:
+
+            cur["ends_at"] = nxt["starts_at"]
 
         else:
+
             gap = (
-                nxt['starts_at'] - cur['ends_at']
+                nxt["starts_at"]
+                - cur["ends_at"]
             ).total_seconds()
 
             if gap <= gap_threshold:
-                cur['ends_at'] = nxt['starts_at']
 
+                cur["ends_at"] = nxt["starts_at"]
 
 channel_xml = build_xmltv(
     channels_data,
     programme_data
 )
 
-with open('epg.xml', 'wb') as f:
+with open("epg.xml", "wb") as f:
     f.write(channel_xml)
+
+print("epg.xml generated successfully")
