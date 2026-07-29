@@ -223,11 +223,17 @@ def build_xmltv(channels, programmes):
 
 
 def get_stream_url(channel, session, headers):
-
+    
     languages = (
         channel.get("labels", {})
                .get("languages", [])
     )
+
+    if channel["id"] == "france-24-en":
+
+        print(channel.keys())
+
+        print(channel)
 
     if not languages:
         print(f"No language: {channel['id']}")
