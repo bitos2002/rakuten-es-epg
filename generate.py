@@ -338,18 +338,21 @@ print(
     )
 )
 
+
 payload = {
-    "audio_language": "ENG",
+    "audio_language": test_channel["labels"]["languages"][0]["id"],
     "audio_quality": "2.0",
     "classification_id": 5,
     "content_id": test_channel["id"],
     "content_type": "live_channels",
-    "device_serial": "web",
+    "device_serial": "not implemented",
     "player": "web:HLS-NONE:NONE",
     "strict_video_quality": False,
     "subtitle_language": "MIS",
     "video_type": "stream"
 }
+
+
 
 query = {
     "classification_id": 5,
@@ -362,6 +365,7 @@ query = {
     "market_code": "es"
 }
 
+
 r = requests.post(
     "https://gizmo.rakuten.tv/v3/avod/streamings",
     headers=headers,
@@ -372,6 +376,11 @@ r = requests.post(
 
 print("STREAM STATUS:", r.status_code)
 print(r.text[:5000])
+
+
+print(r.status_code)
+print(r.text)
+
 
 print("\n========================================")
 print("FIRST CHANNEL RAW JSON FILE")
