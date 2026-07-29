@@ -407,13 +407,30 @@ print("CHANNEL TITLE:", test_channel["title"])
 print("AUDIO LANGUAGE:", payload["audio_language"])
 print("CONTENT ID:", payload["content_id"])
 
-r = requests.post(
+
+session = requests.Session()
+
+session.get(
+    "https://www.rakuten.tv/es",
+    headers=headers,
+    timeout=30
+)
+
+
+r = session.post(
     "https://gizmo.rakuten.tv/v3/avod/streamings",
     headers=headers,
     params=query,
     json=payload,
     timeout=60
 )
+
+
+print("RESPONSE HEADERS")
+print(r.headers)
+
+print("RESPONSE URL")
+print(r.url)
 
 
 print(r.status_code)
