@@ -277,6 +277,8 @@ def get_stream_url(channel, session, headers):
             json=payload,
             timeout=60
         )
+        print(response.request.body)
+
 
         print(
             channel["id"],
