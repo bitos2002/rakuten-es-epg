@@ -253,7 +253,8 @@ def get_stream_url(channel, session, headers):
     }
 
     try:
-
+        if channel["id"] == "france-24-en":
+            print(payload)
         response = session.post(
             "https://gizmo.rakuten.tv/v3/avod/streamings",
             headers=headers,
@@ -313,6 +314,11 @@ def generate_m3u(channels, headers):
     print("Generating rakuten.m3u...")
 
     session = requests.Session()
+
+    session.get(
+        "https://www.rakuten.tv/es",
+        timeout=30
+    )
 
     streams_generated = 0
 
