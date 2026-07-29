@@ -411,6 +411,14 @@ with open(
 
 print("all_channels.json generated")
 
+print(
+    json_module.dumps(
+        json[:2],
+        indent=2,
+        ensure_ascii=False
+    )
+)
+
 with open(
     "all_channel_ids.json",
     "w",
