@@ -324,6 +324,43 @@ for channel in json[:50]:
 
 print(f"Retrieved {len(json)} channels")
 
+test_channel = json[0]
+
+payload = {
+    "audio_language": "ENG",
+    "audio_quality": "2.0",
+    "classification_id": 5,
+    "content_id": test_channel["id"],
+    "content_type": "live_channels",
+    "device_serial": "web",
+    "player": "web:HLS-NONE:NONE",
+    "strict_video_quality": False,
+    "subtitle_language": "MIS",
+    "video_type": "stream"
+}
+
+query = {
+    "classification_id": 5,
+    "device_identifier": "web",
+    "device_stream_audio_quality": "2.0",
+    "device_stream_hdr_type": "NONE",
+    "device_stream_video_quality": "FHD",
+    "disable_dash_legacy_packages": False,
+    "locale": "es",
+    "market_code": "es"
+}
+
+r = requests.post(
+    "https://gizmo.rakuten.tv/v3/avod/streamings",
+    headers=headers,
+    params=query,
+    json=payload,
+    timeout=60
+)
+
+print("STREAM STATUS:", r.status_code)
+print(r.text[:5000])
+
 print("\n========================================")
 print("FIRST CHANNEL RAW JSON FILE")
 print("========================================")
