@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, time as dt_time, timezone
 import pytz
 import unicodedata
 import time
+import json as json_module
 
 tz = pytz.timezone('Europe/Madrid')
 
@@ -272,6 +273,51 @@ if res is None or res.status_code != 200:
 json = res.json()["data"]
 
 print(f"Retrieved {len(json)} channels")
+
+print("\n========================================")
+print("FIRST CHANNEL DEBUG")
+print("========================================")
+
+print(
+    json_module.dumps(
+        json[0],
+        indent=2,
+        ensure_ascii=False
+    )
+)
+
+print("\n========================================")
+print("CHANNEL KEYS")
+print("========================================")
+
+for key in json[0].keys():
+    print(key)
+
+with open(
+    "debug_channel.json",
+    "w",
+    encoding="utf-8"
+) as f:
+
+    json_module.dump(
+        json[0],
+        f,
+        indent=2,
+        ensure_ascii=False
+    )
+
+print("debug_channel.json generated")
+
+with open(
+    "channel_keys.txt",
+    "w",
+    encoding="utf-8"
+) as f:
+
+    for key in json[0].keys():
+        f.write(f"{key}\n")
+
+print("channel_keys.txt generated")
 
 channels_data = []
 programme_data = []
