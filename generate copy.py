@@ -413,12 +413,20 @@ url = (
 )
 
 headers = {
-    "Origin": "https://rakuten.tv",
-    "Referer": "https://rakuten.tv/",
     "User-Agent": (
-        "Mozilla/5.0 (X11; Linux x86_64; rv:98.0) "
-        "Gecko/20100101 Firefox/98.0"
-    )
+        "Mozilla/5.0 "
+        "(X11; Linux x86_64) "
+        "AppleWebKit/537.36 "
+        "(KHTML, like Gecko) "
+        "Chrome/138.0 Safari/537.36"
+    ),
+    "Accept": "application/json",
+    "Accept-Language": (
+        "es-ES,es;q=0.9,en;q=0.8"
+    ),
+    "Referer": (
+        "https://www.rakuten.tv/"
+    ),
 }
 
 res = None
