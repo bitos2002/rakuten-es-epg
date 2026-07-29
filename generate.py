@@ -5,6 +5,9 @@ import pytz
 import unicodedata
 import time
 
+print("FILE=", os.path.abspath(__file__))
+print("OSCAR_TEST_29072026-1")
+
 tz = pytz.timezone("Europe/Madrid")
 
 
@@ -421,6 +424,10 @@ headers = {
         "Gecko/20100101 Firefox/98.0"
     )
 }
+
+print("HEADERS DEFINITION")
+print(headers)
+
 
 res = None
 
