@@ -273,6 +273,43 @@ if res is None or res.status_code != 200:
 json = res.json()["data"]
 
 print("\n========================================")
+print("CHANNEL DETAILS TEST")
+print("========================================")
+
+test_id = json[0]["id"]
+
+detail_url = (
+    f"https://gizmo.rakuten.tv/v3/live_channels/{test_id}"
+    f"?locale=es"
+    f"&market_code=es"
+)
+
+try:
+
+    detail_res = requests.get(
+        detail_url,
+        headers=headers,
+        timeout=30
+    )
+
+    print("DETAIL STATUS:", detail_res.status_code)
+
+    with open(
+        "channel_detail.json",
+        "w",
+        encoding="utf-8"
+    ) as f:
+
+        f.write(detail_res.text)
+
+    print("channel_detail.json generated")
+
+except Exception as e:
+
+    print("DETAIL ERROR:", e)
+
+
+print("\n========================================")
 print("FIRST CHANNEL IDS")
 print("========================================")
 
@@ -630,3 +667,4 @@ print("all_channels.json")
 print("possible_stream_keys.txt")
 print("first_channel_complete.json")
 print("all_ids.txt")
+print("channel_detail.json")
