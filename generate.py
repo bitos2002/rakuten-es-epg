@@ -416,6 +416,15 @@ session.get(
     timeout=30
 )
 
+print(query)
+
+print(
+    json_module.dumps(
+        test_channel,
+        indent=2,
+        ensure_ascii=False
+    )
+)
 
 r = session.post(
     "https://gizmo.rakuten.tv/v3/avod/streamings",
