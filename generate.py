@@ -243,7 +243,7 @@ def get_stream_url(channel, session, headers):
         "audio_language": languages[0]["id"],
         "audio_quality": "2.0",
         "classification_id": 5,
-        "content_id": channel["id"],
+        "content_id": channel["numerical_id"],
         "content_type": "live_channels",
         "device_serial": "not implemented",
         "player": "web:HLS-NONE:NONE",
