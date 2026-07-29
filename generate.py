@@ -272,6 +272,20 @@ if res is None or res.status_code != 200:
 
 json = res.json()["data"]
 
+test_channel = None
+
+for channel in json:
+
+    if channel["id"] == "crimenes-reales":
+
+        test_channel = channel
+        break
+
+
+print("CHANNEL ID:", test_channel["id"])
+print("CHANNEL TITLE:", test_channel["title"])
+
+
 print("\n========================================")
 print("CHANNEL DETAILS TEST")
 print("========================================")
@@ -365,6 +379,8 @@ query = {
     "market_code": "es"
 }
 
+print("CHANNEL ID:", test_channel["id"])
+print("LANG:", test_channel["labels"]["languages"][0]["id"])
 
 r = requests.post(
     "https://gizmo.rakuten.tv/v3/avod/streamings",
