@@ -288,6 +288,41 @@ for channel in json[:50]:
 print(f"Retrieved {len(json)} channels")
 
 print("\n========================================")
+print("FIRST CHANNEL RAW JSON FILE")
+print("========================================")
+
+with open(
+    "first_channel_complete.json",
+    "w",
+    encoding="utf-8"
+) as f:
+
+    json_module.dump(
+        json[0],
+        f,
+        indent=4,
+        ensure_ascii=False
+    )
+
+print("first_channel_complete.json generated")
+
+with open(
+    "all_ids.txt",
+    "w",
+    encoding="utf-8"
+) as f:
+
+    for channel in json:
+
+        f.write(
+            f"{channel.get('id')}|"
+            f"{channel.get('numerical_id')}|"
+            f"{channel.get('title')}\n"
+        )
+
+print("all_ids.txt generated")
+
+print("\n========================================")
 print("FIRST CHANNEL COMPLETE")
 print("========================================")
 
@@ -585,3 +620,5 @@ print("debug_channel.json")
 print("channel_keys.txt")
 print("all_channels.json")
 print("possible_stream_keys.txt")
+print("first_channel_complete.json")
+print("all_ids.txt")
