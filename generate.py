@@ -255,6 +255,17 @@ def get_stream_url(channel, session, headers):
 
     try:
 
+        if channel["id"] == "france-24-en":
+
+            print("========== PAYLOAD ==========")
+            print(payload)
+
+            print("========== QUERY ==========")
+            print(query)
+
+            print("========== HEADERS ==========")
+            print(headers)
+
         response = session.post(
             "https://gizmo.rakuten.tv/v3/avod/streamings",
             headers=headers,
@@ -269,6 +280,11 @@ def get_stream_url(channel, session, headers):
         )
 
         data = response.json()
+
+        if channel["id"] == "france-24-en":
+
+            print("========== RESPONSE ==========")
+            print(data)
 
         stream_infos = (
             data.get("data", {})
