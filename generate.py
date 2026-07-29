@@ -275,6 +275,35 @@ json = res.json()["data"]
 print(f"Retrieved {len(json)} channels")
 
 print("\n========================================")
+print("FIRST CHANNEL COMPLETE")
+print("========================================")
+
+first_channel = json[0]
+
+print(
+    f"ID: {first_channel.get('id')}"
+)
+
+print(
+    f"NUMERICAL_ID: {first_channel.get('numerical_id')}"
+)
+
+with open(
+    "first_channel_complete.json",
+    "w",
+    encoding="utf-8"
+) as f:
+
+    json_module.dump(
+        first_channel,
+        f,
+        indent=2,
+        ensure_ascii=False
+    )
+
+print("first_channel_complete.json generated")
+
+print("\n========================================")
 print("FIRST CHANNEL DEBUG")
 print("========================================")
 
@@ -333,6 +362,15 @@ with open(
     )
 
 print("all_channels.json generated")
+
+for channel in json[:20]:
+
+    print(
+        f"ID={channel.get('id')} "
+        f"NUMERICAL_ID={channel.get('numerical_id')} "
+        f"TITLE={channel.get('title')}"
+    )
+
 
 SEARCH_TERMS = [
     "url",
