@@ -326,6 +326,18 @@ print(f"Retrieved {len(json)} channels")
 
 test_channel = json[0]
 
+print("\n========================================")
+print("LANGUAGES")
+print("========================================")
+
+print(
+    json_module.dumps(
+        test_channel.get("labels", {}),
+        indent=2,
+        ensure_ascii=False
+    )
+)
+
 payload = {
     "audio_language": "ENG",
     "audio_quality": "2.0",
