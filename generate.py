@@ -319,6 +319,84 @@ with open(
 
 print("channel_keys.txt generated")
 
+with open(
+    "all_channels.json",
+    "w",
+    encoding="utf-8"
+) as f:
+
+    json_module.dump(
+        json,
+        f,
+        indent=2,
+        ensure_ascii=False
+    )
+
+print("all_channels.json generated")
+
+SEARCH_TERMS = [
+    "url",
+    "stream",
+    "play",
+    "video",
+    "manifest",
+    "source",
+    "media",
+    "live"
+]
+
+found_keys = set()
+
+
+def scan_object(obj, prefix=""):
+
+    if isinstance(obj, dict):
+
+        for key, value in obj.items():
+
+            full_key = (
+                f"{prefix}.{key}"
+                if prefix
+                else key
+            )
+
+            if any(
+                term in key.lower()
+                for term in SEARCH_TERMS
+            ):
+                found_keys.add(full_key)
+
+            scan_object(
+                value,
+                full_key
+            )
+
+    elif isinstance(obj, list):
+
+        for item in obj:
+            scan_object(item, prefix)
+
+
+scan_object(json)
+
+print("\n========================================")
+print("POSSIBLE STREAM KEYS")
+print("========================================")
+
+for key in sorted(found_keys):
+    print(key)
+
+with open(
+    "possible_stream_keys.txt",
+    "w",
+    encoding="utf-8"
+) as f:
+
+    for key in sorted(found_keys):
+        f.write(key + "\n")
+
+print("possible_stream_keys.txt generated")
+
 channels_data = []
 programme_data = []
 
@@ -427,3 +505,10 @@ with open("epg.xml", "wb") as f:
     f.write(channel_xml)
 
 print("epg.xml generated successfully")
+print("\n========================================")
+print("DEBUG FILES GENERATED")
+print("========================================")
+print("debug_channel.json")
+print("channel_keys.txt")
+print("all_channels.json")
+print("possible_stream_keys.txt")
