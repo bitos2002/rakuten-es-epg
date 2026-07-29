@@ -4,47 +4,52 @@ from datetime import datetime, timedelta, time as dt_time, timezone
 import pytz
 import unicodedata
 import time
-import json as json_module
 
-tz = pytz.timezone('Europe/Madrid')
+tz = pytz.timezone("Europe/Madrid")
 
 
 def remove_control_characters(s):
     if s is None:
         return None
+
     return "".join(
         ch for ch in s
         if unicodedata.category(ch)[0] != "C"
     )
 
 
-def get_days() -> list:
+def get_days():
     now = datetime.now().replace(
-        hour=datetime.now().hour,
         minute=0,
         second=0,
         microsecond=0
     )
 
     day_1 = (
-        datetime.combine(datetime.now(), dt_time(0, 0))
-        + timedelta(days=1)
+        datetime.combine(
+            datetime.now(),
+            dt_time(0, 0)
+        ) + timedelta(days=1)
     )
 
     day_2 = (
-        datetime.combine(datetime.now(), dt_time(0, 0))
-        + timedelta(days=2)
+        datetime.combine(
+            datetime.now(),
+            dt_time(0, 0)
+        ) + timedelta(days=2)
     )
 
     day_3 = (
-        datetime.combine(datetime.now(), dt_time(0, 0))
-        + timedelta(days=3)
+        datetime.combine(
+            datetime.now(),
+            dt_time(0, 0)
+        ) + timedelta(days=3)
     )
 
     return [now, day_1, day_2, day_3]
 
 
-def build_xmltv(channels: list, programmes: list) -> bytes:
+def build_xmltv(channels, programmes):
 
     dt_format = "%Y%m%d%H%M%S %z"
 
@@ -52,17 +57,21 @@ def build_xmltv(channels: list, programmes: list) -> bytes:
 
         if isinstance(val, datetime):
 
-            v = val
+            if val.tzinfo is None:
+                val = val.replace(
+                    tzinfo=timezone.utc
+                )
 
-            if v.tzinfo is None:
-                v = v.replace(tzinfo=timezone.utc)
-
-            return v.astimezone(tz).strftime(dt_format)
+            return val.astimezone(tz).strftime(
+                dt_format
+            )
 
         return datetime.fromtimestamp(
             val,
             timezone.utc
-        ).astimezone(tz).strftime(dt_format)
+        ).astimezone(tz).strftime(
+            dt_format
+        )
 
     data = etree.Element("tv")
 
@@ -85,7 +94,7 @@ def build_xmltv(channels: list, programmes: list) -> bytes:
 
         channel.set(
             "id",
-            str(ch.get("id"))
+            str(ch["id"])
         )
 
         name = etree.SubElement(
@@ -98,18 +107,18 @@ def build_xmltv(channels: list, programmes: list) -> bytes:
             "es"
         )
 
-        name.text = ch.get("name")
+        name.text = ch["name"]
 
         if ch.get("icon"):
 
-            icon_src = etree.SubElement(
+            icon = etree.SubElement(
                 channel,
                 "icon"
             )
 
-            icon_src.set(
+            icon.set(
                 "src",
-                ch.get("icon")
+                ch["icon"]
             )
 
     for pr in programmes:
@@ -121,17 +130,21 @@ def build_xmltv(channels: list, programmes: list) -> bytes:
 
         programme.set(
             "channel",
-            str(pr.get("channel_id"))
+            str(pr["channel_id"])
         )
 
         programme.set(
             "start",
-            _to_tz_str(pr.get("starts_at"))
+            _to_tz_str(
+                pr["starts_at"]
+            )
         )
 
         programme.set(
             "stop",
-            _to_tz_str(pr.get("ends_at"))
+            _to_tz_str(
+                pr["ends_at"]
+            )
         )
 
         title = etree.SubElement(
@@ -144,7 +157,7 @@ def build_xmltv(channels: list, programmes: list) -> bytes:
             "es"
         )
 
-        title.text = pr.get("title")
+        title.text = pr["title"]
 
         if pr.get("subtitle"):
 
@@ -159,7 +172,7 @@ def build_xmltv(channels: list, programmes: list) -> bytes:
             )
 
             subtitle.text = remove_control_characters(
-                pr.get("subtitle")
+                pr["subtitle"]
             )
 
         if pr.get("description"):
@@ -174,13 +187,15 @@ def build_xmltv(channels: list, programmes: list) -> bytes:
                 "es"
             )
 
-            description.text = remove_control_characters(
-                pr.get("description")
+            description.text = (
+                remove_control_characters(
+                    pr["description"]
+                )
             )
 
         if pr.get("tags"):
 
-            for tag in pr.get("tags"):
+            for tag in pr["tags"]:
 
                 category = etree.SubElement(
                     programme,
@@ -192,7 +207,9 @@ def build_xmltv(channels: list, programmes: list) -> bytes:
                     "es"
                 )
 
-                category.text = tag.get("name")
+                category.text = tag.get(
+                    "name"
+                )
 
     return etree.tostring(
         data,
@@ -200,6 +217,147 @@ def build_xmltv(channels: list, programmes: list) -> bytes:
         encoding="utf-8"
     )
 
+
+def get_stream_url(
+        channel,
+        session,
+        headers
+):
+
+    payload = {
+        "audio_language": (
+            channel.get("labels", {})
+                   .get("languages", [{}])[0]
+                   .get("id", "es")
+        ),
+        "audio_quality": "2.0",
+        "classification_id": 5,
+        "content_id": channel["id"],
+        "content_type": "live_channels",
+        "device_serial": "not implemented",
+        "player": "web:HLS-NONE:NONE",
+        "strict_video_quality": False,
+        "subtitle_language": "MIS",
+        "video_type": "stream"
+    }
+
+    query = {
+        "classification_id": 5,
+        "device_identifier": "web",
+        "device_stream_audio_quality": "2.0",
+        "device_stream_hdr_type": "NONE",
+        "device_stream_video_quality": "FHD",
+        "disable_dash_legacy_packages": False,
+        "locale": "es",
+        "market_code": "es"
+    }
+
+    try:
+
+        response = session.post(
+            "https://gizmo.rakuten.tv/v3/avod/streamings",
+            headers=headers,
+            params=query,
+            json=payload,
+            timeout=60
+        )
+
+        data = response.json()
+
+        url = (
+            data.get("data", {})
+                .get(
+                    "stream_infos",
+                    [{}]
+                )[0]
+                .get("url")
+        )
+
+        if not url:
+            return None
+
+        head, sep, tail = (
+            url.partition(".m3u8")
+        )
+
+        return head + sep
+
+    except Exception:
+
+        return None
+
+
+def generate_m3u(
+        channels,
+        headers
+):
+
+    print(
+        "Generating rakuten.m3u..."
+    )
+
+    session = requests.Session()
+
+    with open(
+        "rakuten.m3u",
+        "w",
+        encoding="utf-8"
+    ) as f:
+
+        f.write("#EXTM3U\n")
+
+        for channel in channels:
+
+            stream_url = (
+                get_stream_url(
+                    channel,
+                    session,
+                    headers
+                )
+            )
+
+            if not stream_url:
+                continue
+
+            logo = ""
+
+            images = channel.get(
+                "images",
+                {}
+            )
+
+            if images:
+
+                logo = (
+                    images.get(
+                        "artwork_negative"
+                    )
+                    or images.get(
+                        "artwork"
+                    )
+                    or ""
+                )
+
+            title = channel["title"]
+
+            f.write(
+                f'#EXTINF:-1 '
+                f'tvg-id="{channel["id"]}" '
+                f'tvg-name="{title}" '
+                f'tvg-logo="{logo}",'
+                f'{title}\n'
+            )
+
+            f.write(
+                stream_url + "\n"
+            )
+
+    print(
+        "rakuten.m3u generated successfully"
+    )
+
+
+print("Grabbing data")
 
 days = get_days()
 
@@ -221,29 +379,38 @@ url_string = (
 
 url = (
     "https://gizmo.rakuten.tv/v3/live_channels?"
-    + url_string.replace(":", "%3A")
+    + url_string.replace(
+        ":",
+        "%3A"
+    )
 )
-
-print("Grabbing data")
 
 headers = {
     "User-Agent": (
-        "Mozilla/5.0 (X11; Linux x86_64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Mozilla/5.0 "
+        "(X11; Linux x86_64) "
+        "AppleWebKit/537.36 "
+        "(KHTML, like Gecko) "
         "Chrome/138.0 Safari/537.36"
     ),
     "Accept": "application/json",
-    "Accept-Language": "es-ES,es;q=0.9,en;q=0.8",
-    "Referer": "https://www.rakuten.tv/",
+    "Accept-Language": (
+        "es-ES,es;q=0.9,en;q=0.8"
+    ),
+    "Referer": (
+        "https://www.rakuten.tv/"
+    ),
 }
 
 res = None
 
 for attempt in range(5):
 
-    print(f"Attempt {attempt + 1}/5")
-
     try:
+
+        print(
+            f"Attempt {attempt + 1}/5"
+        )
 
         res = requests.get(
             url,
@@ -251,473 +418,79 @@ for attempt in range(5):
             timeout=60
         )
 
-        print(f"HTTP Status: {res.status_code}")
-
         if res.status_code == 200:
             break
 
     except Exception as e:
 
-        print(f"Request error: {e}")
+        print(
+            f"Request error: {e}"
+        )
 
     if attempt < 4:
-        print("Waiting 30 seconds before retry...")
         time.sleep(30)
 
 if res is None or res.status_code != 200:
 
     raise ConnectionError(
-        f"HTTP{res.status_code if res else 'NO_RESPONSE'}: could not get info from server!"
+        "Unable to retrieve live channels"
     )
 
-json = res.json()["data"]
-
-test_channel = None
-
-for channel in json:
-
-    if channel["id"] == "crimenes-reales":
-
-        test_channel = channel
-        break
-
-if not test_channel:
-
-    raise Exception(
-        "crimenes-reales not found"
-    )
-
-
-
-print("CHANNEL ID:", test_channel["id"])
-print("CHANNEL TITLE:", test_channel["title"])
-
-
-print("\n========================================")
-print("CHANNEL DETAILS TEST")
-print("========================================")
-
-test_id = json[0]["id"]
-
-detail_url = (
-    f"https://gizmo.rakuten.tv/v3/live_channels/{test_id}"
-    f"?locale=es"
-    f"&market_code=es"
+channels_json = (
+    res.json()["data"]
 )
-
-try:
-
-    detail_res = requests.get(
-        detail_url,
-        headers=headers,
-        timeout=30
-    )
-
-    print("DETAIL STATUS:", detail_res.status_code)
-
-    with open(
-        "channel_detail.json",
-        "w",
-        encoding="utf-8"
-    ) as f:
-
-        f.write(detail_res.text)
-
-    print("channel_detail.json generated")
-
-except Exception as e:
-
-    print("DETAIL ERROR:", e)
-
-
-print("\n========================================")
-print("FIRST CHANNEL IDS")
-print("========================================")
-
-for channel in json[:50]:
-
-    print(
-        f"id={channel.get('id')} | "
-        f"numerical_id={channel.get('numerical_id')} | "
-        f"title={channel.get('title')}"
-    )
-
-
-print(f"Retrieved {len(json)} channels")
-
-
-print("\n========================================")
-print("LANGUAGES")
-print("========================================")
-
-print(
-    json_module.dumps(
-        test_channel.get("labels", {}),
-        indent=2,
-        ensure_ascii=False
-    )
-)
-
-
-payload = {
-
-    
-    "audio_language": (
-        test_channel
-        .get("labels", {})
-        .get("languages", [{}])[0]
-        .get("id", "SPA")
-    ),
-    "audio_quality": "2.0",
-    "classification_id": 5,
-    "content_id": test_channel["id"],
-    "content_type": "live_channels",
-    "device_serial": "not implemented",
-    "player": "web:HLS-NONE:NONE",
-    "strict_video_quality": False,
-    "subtitle_language": "MIS",
-    "video_type": "stream"
-}
-
-
-
-query = {
-    "classification_id": 5,
-    "device_identifier": "web",
-    "device_stream_audio_quality": "2.0",
-    "device_stream_hdr_type": "NONE",
-    "device_stream_video_quality": "FHD",
-    "disable_dash_legacy_packages": False,
-    "locale": "es",
-    "market_code": "es"
-}
-
-print("CHANNEL ID:", test_channel["id"])
-print("LANG:", test_channel["labels"]["languages"][0]["id"])
-
-print("POST CONTENT_ID =", payload["content_id"])
-print("POST AUDIO_LANGUAGE =", payload["audio_language"])
-print(payload)
-
-print("========================================")
-print("POST TEST")
-print("========================================")
-print("CHANNEL ID:", test_channel["id"])
-print("CHANNEL TITLE:", test_channel["title"])
-print("AUDIO LANGUAGE:", payload["audio_language"])
-print("CONTENT ID:", payload["content_id"])
-
-
-session = requests.Session()
-
-session.get(
-    "https://www.rakuten.tv/es",
-    headers=headers,
-    timeout=30
-)
-
-print(query)
-
-print(
-    json_module.dumps(
-        test_channel,
-        indent=2,
-        ensure_ascii=False
-    )
-)
-
-r = session.post(
-    "https://gizmo.rakuten.tv/v3/avod/streamings",
-    headers=headers,
-    params=query,
-    json=payload,
-    timeout=60
-)
-
-
-print("RESPONSE HEADERS")
-print(r.headers)
-
-print("RESPONSE URL")
-print(r.url)
-
-
-print(r.status_code)
-print(r.text)
-
-
-print("STREAM STATUS:", r.status_code)
-print(r.text[:5000])
-
-
-print(r.status_code)
-print(r.text)
-
-
-print("\n========================================")
-print("FIRST CHANNEL RAW JSON FILE")
-print("========================================")
-
-with open(
-    "first_channel_complete.json",
-    "w",
-    encoding="utf-8"
-) as f:
-
-    json_module.dump(
-        json[0],
-        f,
-        indent=4,
-        ensure_ascii=False
-    )
-
-print("first_channel_complete.json generated")
-
-with open(
-    "all_ids.txt",
-    "w",
-    encoding="utf-8"
-) as f:
-
-    for channel in json:
-
-        f.write(
-            f"{channel.get('id')}|"
-            f"{channel.get('numerical_id')}|"
-            f"{channel.get('title')}\n"
-        )
-
-print("all_ids.txt generated")
-
-print("\n========================================")
-print("FIRST CHANNEL COMPLETE")
-print("========================================")
-
-first_channel = json[0]
-
-print(
-    f"ID: {first_channel.get('id')}"
-)
-
-print(
-    f"NUMERICAL_ID: {first_channel.get('numerical_id')}"
-)
-
-with open(
-    "first_channel_complete.json",
-    "w",
-    encoding="utf-8"
-) as f:
-
-    json_module.dump(
-        first_channel,
-        f,
-        indent=2,
-        ensure_ascii=False
-    )
-
-print("first_channel_complete.json generated")
-
-print("\n========================================")
-print("FIRST CHANNEL DEBUG")
-print("========================================")
-
-print(
-    json_module.dumps(
-        json[0],
-        indent=2,
-        ensure_ascii=False
-    )
-)
-
-print("\n========================================")
-print("CHANNEL KEYS")
-print("========================================")
-
-for key in json[0].keys():
-    print(key)
-
-with open(
-    "debug_channel.json",
-    "w",
-    encoding="utf-8"
-) as f:
-
-    json_module.dump(
-        json[0],
-        f,
-        indent=2,
-        ensure_ascii=False
-    )
-
-print("debug_channel.json generated")
-
-with open(
-    "channel_keys.txt",
-    "w",
-    encoding="utf-8"
-) as f:
-
-    for key in json[0].keys():
-        f.write(f"{key}\n")
-
-print("channel_keys.txt generated")
-
-with open(
-    "all_channels.json",
-    "w",
-    encoding="utf-8"
-) as f:
-
-    json_module.dump(
-        json,
-        f,
-        indent=2,
-        ensure_ascii=False
-    )
-
-print("all_channels.json generated")
-
-print(
-    json_module.dumps(
-        json[:2],
-        indent=2,
-        ensure_ascii=False
-    )
-)
-
-with open(
-    "all_channel_ids.json",
-    "w",
-    encoding="utf-8"
-) as f:
-
-    json_module.dump(
-        [
-            {
-                "id": ch.get("id"),
-                "numerical_id": ch.get("numerical_id"),
-                "title": ch.get("title")
-            }
-            for ch in json
-        ],
-        f,
-        indent=2,
-        ensure_ascii=False
-    )
-
-print("all_channel_ids.json generated")
-
-for channel in json[:20]:
-
-    print(
-        f"ID={channel.get('id')} "
-        f"NUMERICAL_ID={channel.get('numerical_id')} "
-        f"TITLE={channel.get('title')}"
-    )
-
-
-SEARCH_TERMS = [
-    "url",
-    "stream",
-    "play",
-    "video",
-    "manifest",
-    "source",
-    "media",
-    "live"
-]
-
-found_keys = set()
-
-
-def scan_object(obj, prefix=""):
-
-    if isinstance(obj, dict):
-
-        for key, value in obj.items():
-
-            full_key = (
-                f"{prefix}.{key}"
-                if prefix
-                else key
-            )
-
-            if any(
-                term in key.lower()
-                for term in SEARCH_TERMS
-            ):
-                found_keys.add(full_key)
-
-            scan_object(
-                value,
-                full_key
-            )
-
-    elif isinstance(obj, list):
-
-        for item in obj:
-            scan_object(item, prefix)
-
-
-scan_object(json)
-
-print("\n========================================")
-print("POSSIBLE STREAM KEYS")
-print("========================================")
-
-for key in sorted(found_keys):
-    print(key)
-
-with open(
-    "possible_stream_keys.txt",
-    "w",
-    encoding="utf-8"
-) as f:
-
-    for key in sorted(found_keys):
-        f.write(key + "\n")
-
-print("possible_stream_keys.txt generated")
 
 channels_data = []
 programme_data = []
 
-for channel in json:
+for channel in channels_json:
 
     ch_id = channel["id"]
 
     ch_icon = None
 
-    if channel.get("images"):
+    images = channel.get(
+        "images",
+        {}
+    )
 
-        images = channel["images"]
+    if images:
 
-        if images.get("artwork_negative"):
-            ch_icon = images["artwork_negative"]
+        ch_icon = (
+            images.get(
+                "artwork_negative"
+            )
+            or images.get(
+                "artwork"
+            )
+        )
 
-        elif images.get("artwork"):
-            ch_icon = images["artwork"]
+    labels = channel.get(
+        "labels",
+        {}
+    )
 
-    ch_tags = None
+    ch_tags = labels.get(
+        "tags"
+    )
 
-    if channel.get("labels"):
+    channels_data.append(
+        {
+            "name": channel["title"],
+            "epg_number": channel.get(
+                "channel_number"
+            ),
+            "id": ch_id,
+            "icon": ch_icon,
+            "language": "es",
+            "tags": ch_tags,
+        }
+    )
 
-        labels = channel["labels"]
-
-        if labels.get("tags"):
-            ch_tags = labels["tags"]
-
-    channels_data.append({
-        "name": channel["title"],
-        "epg_number": channel.get("channel_number"),
-        "id": ch_id,
-        "icon": ch_icon,
-        "language": "es",
-        "tags": ch_tags
-    })
-
-    for item in channel["live_programs"]:
+    for item in channel.get(
+        "live_programs",
+        []
+    ):
 
         start = datetime.strptime(
             item["starts_at"],
@@ -729,18 +502,18 @@ for channel in json:
             "%Y-%m-%dT%H:%M:%S.000%z"
         )
 
-        programme_data.append({
-            "title": item["title"],
-            "subtitle": item["subtitle"],
-            "description": item["description"],
-            "starts_at": start,
-            "ends_at": end,
-            "channel_id": ch_id,
-            "language": "es",
-            "tags": ch_tags,
-        })
-
-gap_threshold = 60
+        programme_data.append(
+            {
+                "title": item["title"],
+                "subtitle": item["subtitle"],
+                "description": item["description"],
+                "starts_at": start,
+                "ends_at": end,
+                "channel_id": ch_id,
+                "language": "es",
+                "tags": ch_tags,
+            }
+        )
 
 programme_data.sort(
     key=lambda p: (
@@ -751,50 +524,64 @@ programme_data.sort(
 
 by_channel = {}
 
-for p in programme_data:
+for prog in programme_data:
+
     by_channel.setdefault(
-        p["channel_id"],
+        prog["channel_id"],
         []
-    ).append(p)
+    ).append(prog)
 
-for ch_id, plist in by_channel.items():
+gap_threshold = 60
 
-    for i in range(len(plist) - 1):
+for plist in by_channel.values():
 
-        cur = plist[i]
+    for i in range(
+        len(plist) - 1
+    ):
+
+        current = plist[i]
         nxt = plist[i + 1]
 
-        if nxt["starts_at"] <= cur["ends_at"]:
+        if (
+            nxt["starts_at"]
+            <= current["ends_at"]
+        ):
 
-            cur["ends_at"] = nxt["starts_at"]
+            current["ends_at"] = (
+                nxt["starts_at"]
+            )
 
         else:
 
             gap = (
                 nxt["starts_at"]
-                - cur["ends_at"]
+                - current["ends_at"]
             ).total_seconds()
 
             if gap <= gap_threshold:
 
-                cur["ends_at"] = nxt["starts_at"]
+                current["ends_at"] = (
+                    nxt["starts_at"]
+                )
 
 channel_xml = build_xmltv(
     channels_data,
     programme_data
 )
 
-with open("epg.xml", "wb") as f:
+with open(
+    "epg.xml",
+    "wb"
+) as f:
+
     f.write(channel_xml)
 
-print("epg.xml generated successfully")
-print("\n========================================")
-print("DEBUG FILES GENERATED")
-print("========================================")
-print("debug_channel.json")
-print("channel_keys.txt")
-print("all_channels.json")
-print("possible_stream_keys.txt")
-print("first_channel_complete.json")
-print("all_ids.txt")
-print("channel_detail.json")
+print(
+    "epg.xml generated successfully"
+)
+
+generate_m3u(
+    channels_json,
+    headers
+)
+
