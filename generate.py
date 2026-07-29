@@ -218,18 +218,19 @@ def build_xmltv(channels, programmes):
     )
 
 
-def get_stream_url(
-        channel,
-        session,
-        headers
-):
+def get_stream_url(channel, session, headers):
+
+    languages = (
+        channel.get("labels", {})
+               .get("languages", [])
+    )
+
+    if not languages:
+        print(f"No language: {channel['id']}")
+        return None
 
     payload = {
-        "audio_language": (
-            channel.get("labels", {})
-                   .get("languages", [{}])[0]
-                   .get("id", "es")
-        ),
+        "audio_language": languages[0]["id"],
         "audio_quality": "2.0",
         "classification_id": 5,
         "content_id": channel["id"],
@@ -262,27 +263,38 @@ def get_stream_url(
             timeout=60
         )
 
+        print(
+            channel["id"],
+            response.status_code
+        )
+
         data = response.json()
 
-        url = (
+        stream_infos = (
             data.get("data", {})
-                .get(
-                    "stream_infos",
-                    [{}]
-                )[0]
-                .get("url")
+                .get("stream_infos", [])
         )
 
-        if not url:
+        if not stream_infos:
+            print(data)
             return None
 
-        head, sep, tail = (
-            url.partition(".m3u8")
+        url = stream_infos[0].get("url")
+
+        if not url:
+            print(data)
+            return None
+
+        return (
+            url.partition(".m3u8")[0]
+            + ".m3u8"
         )
 
-        return head + sep
+    except Exception as e:
 
-    except Exception:
+        print(
+            f"{channel['id']} -> {e}"
+        )
 
         return None
 
@@ -386,20 +398,9 @@ url = (
 )
 
 headers = {
-    "User-Agent": (
-        "Mozilla/5.0 "
-        "(X11; Linux x86_64) "
-        "AppleWebKit/537.36 "
-        "(KHTML, like Gecko) "
-        "Chrome/138.0 Safari/537.36"
-    ),
-    "Accept": "application/json",
-    "Accept-Language": (
-        "es-ES,es;q=0.9,en;q=0.8"
-    ),
-    "Referer": (
-        "https://www.rakuten.tv/"
-    ),
+    "Origin": "https://rakuten.tv",
+    "Referer": "https://rakuten.tv/",
+    "User_Agent": "Mozilla/5.0 ..."
 }
 
 res = None
