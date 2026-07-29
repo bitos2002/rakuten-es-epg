@@ -281,6 +281,13 @@ for channel in json:
         test_channel = channel
         break
 
+if not test_channel:
+
+    raise Exception(
+        "crimenes-reales not found"
+    )
+
+
 
 print("CHANNEL ID:", test_channel["id"])
 print("CHANNEL TITLE:", test_channel["title"])
@@ -338,7 +345,6 @@ for channel in json[:50]:
 
 print(f"Retrieved {len(json)} channels")
 
-test_channel = json[0]
 
 print("\n========================================")
 print("LANGUAGES")
@@ -354,7 +360,14 @@ print(
 
 
 payload = {
-    "audio_language": test_channel["labels"]["languages"][0]["id"],
+
+    
+    "audio_language": (
+        test_channel
+        .get("labels", {})
+        .get("languages", [{}])[0]
+        .get("id", "SPA")
+    ),
     "audio_quality": "2.0",
     "classification_id": 5,
     "content_id": test_channel["id"],
@@ -382,6 +395,18 @@ query = {
 print("CHANNEL ID:", test_channel["id"])
 print("LANG:", test_channel["labels"]["languages"][0]["id"])
 
+print("POST CONTENT_ID =", payload["content_id"])
+print("POST AUDIO_LANGUAGE =", payload["audio_language"])
+print(payload)
+
+print("========================================")
+print("POST TEST")
+print("========================================")
+print("CHANNEL ID:", test_channel["id"])
+print("CHANNEL TITLE:", test_channel["title"])
+print("AUDIO LANGUAGE:", payload["audio_language"])
+print("CONTENT ID:", payload["content_id"])
+
 r = requests.post(
     "https://gizmo.rakuten.tv/v3/avod/streamings",
     headers=headers,
@@ -389,6 +414,11 @@ r = requests.post(
     json=payload,
     timeout=60
 )
+
+
+print(r.status_code)
+print(r.text)
+
 
 print("STREAM STATUS:", r.status_code)
 print(r.text[:5000])
