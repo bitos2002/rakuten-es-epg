@@ -233,6 +233,8 @@ def get_stream_url(channel, session, headers):
 
         print(channel.keys())
 
+        print(channel)
+
     if not languages:
         print(f"No language: {channel['id']}")
         return None
@@ -241,7 +243,7 @@ def get_stream_url(channel, session, headers):
         "audio_language": languages[0]["id"],
         "audio_quality": "2.0",
         "classification_id": 5,
-        "content_id": channel["numerical_id"],
+        "content_id": channel["id"],
         "content_type": "live_channels",
         "device_serial": "not implemented",
         "player": "web:HLS-NONE:NONE",
@@ -265,6 +267,18 @@ def get_stream_url(channel, session, headers):
 
         if channel["id"] == "france-24-en":
 
+            print("========== CHANNEL FULL ==========")
+            print(channel)
+
+            print("========== CHANNEL ==========")
+            print(channel["classification"])
+
+            print("========== PAYLOAD ==========")
+            print(payload)
+
+            print("========== QUERY ==========")
+            print(query)
+
             print("========== HEADERS ==========")
             print(headers)
 
@@ -275,6 +289,7 @@ def get_stream_url(channel, session, headers):
             json=payload,
             timeout=60
         )
+        print(response.request.body)
 
 
         print(
