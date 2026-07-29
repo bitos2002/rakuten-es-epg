@@ -272,6 +272,19 @@ if res is None or res.status_code != 200:
 
 json = res.json()["data"]
 
+print("\n========================================")
+print("FIRST CHANNEL IDS")
+print("========================================")
+
+for channel in json[:50]:
+
+    print(
+        f"id={channel.get('id')} | "
+        f"numerical_id={channel.get('numerical_id')} | "
+        f"title={channel.get('title')}"
+    )
+
+
 print(f"Retrieved {len(json)} channels")
 
 print("\n========================================")
@@ -362,6 +375,28 @@ with open(
     )
 
 print("all_channels.json generated")
+
+with open(
+    "all_channel_ids.json",
+    "w",
+    encoding="utf-8"
+) as f:
+
+    json_module.dump(
+        [
+            {
+                "id": ch.get("id"),
+                "numerical_id": ch.get("numerical_id"),
+                "title": ch.get("title")
+            }
+            for ch in json
+        ],
+        f,
+        indent=2,
+        ensure_ascii=False
+    )
+
+print("all_channel_ids.json generated")
 
 for channel in json[:20]:
 
