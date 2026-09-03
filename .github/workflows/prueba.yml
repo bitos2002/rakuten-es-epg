@@ -51,8 +51,6 @@ jobs:
               "video_type": "stream"
           }
 
-          import requests
-
           ip = requests.get("https://api.ipify.org").text
 
           print("PUBLIC IP:", ip)
