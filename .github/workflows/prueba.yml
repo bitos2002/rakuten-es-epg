@@ -51,6 +51,12 @@ jobs:
               "video_type": "stream"
           }
 
+          import requests
+
+          ip = requests.get("https://api.ipify.org").text
+
+          print("PUBLIC IP:", ip)
+          
           r = requests.post(
               "https://gizmo.rakuten.tv/v3/avod/streamings",
               headers=headers,
