@@ -343,6 +343,11 @@ def generate_m3u(
 
     session = requests.Session()
 
+    session.get(
+        "https://www.rakuten.tv/es",
+        timeout=30
+    )
+
     with open(
         "rakuten.m3u",
         "w",
