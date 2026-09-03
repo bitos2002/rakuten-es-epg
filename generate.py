@@ -282,12 +282,11 @@ def get_stream_url(channel, session, headers):
             print("========== HEADERS ==========")
             print(headers)
 
-        response = session.post(
+        response = requests.post(
             "https://gizmo.rakuten.tv/v3/avod/streamings",
             headers=headers,
             params=query,
-            json=payload,
-            timeout=60
+            json=payload
         )
         print(response.request.body)
 
