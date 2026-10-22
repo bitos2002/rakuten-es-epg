@@ -424,7 +424,7 @@ url_string = (
     f"&epg_starts_at_timestamp={days[0].timestamp()}"
     f"&locale=es"
     f"&market_code=es"
-    f"&per_page=250"
+    f"&per_page=75"
 )
 
 url = (
